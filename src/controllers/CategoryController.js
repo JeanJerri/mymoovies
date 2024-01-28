@@ -1,4 +1,5 @@
 const db = require("../db");
+
 const CategoryController = {
     async findAll(req, res) {
         try {
@@ -9,36 +10,59 @@ const CategoryController = {
         }
     },
 
-    find(req, res) {
+    async find(req, res) {
         const { id } = req.params;
 
-        //Aqui entraria a regra de persistência do banco de dados//
+        try {
+            const category = await db.query("SELECT * FROM category WHERE id = $1", [
+                id,
+            ]);
 
-        res.json({ 
-            id: id, 
-            name: "Fimes A", 
-            description: "Essa categoria traz filmes com a letra A",
-        });
+        if (category.rows.length > 0) {
+            res.json(category.rows[0]);
+        } else {
+            res.status(404).json({ error: "Categoria não encontrada" });
+        }
+
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     },
 
-    create(req, res) {
+    async create(req, res) {
         const {name, description} = req.body;
 
-        //Aqui entraria a regra de persistência do banco de dados//
+        try {
+            const newCategory = await db.query(
+                "INSERT INTO category(name, description) VALUES ($1, $2) RETURNING *",
+                [name, description]
+            );
 
-        res.status(201).json({
-            id: Number.MAX_SAFE_INTEGER, 
-            name: name, 
-            description: description,
-        })
+        res.status(201).json(newCategory.rows[0]);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     },
 
-    delete(req, res) {
+    //Falta consertar o erro que está aparecendo ao usar essa função
+    async delete(req, res) {
         const { id } = req.params;
 
-        //Aqui entraria a regra de persistência do banco de dados//
+        try {
+            const result = await db.query(
+                "DELETE FROM category WHERE id = $1 RETURNING *",
+                [id]
+            );
 
-        res.status(204).json();
+            if (result.rowCount > 0) {
+                res.status(204).json({});
+            } else {
+                res.status(304).json({});
+            }
+
+        } catch (error) {
+            res.status(500).json({ error: error.message});
+        }
     },
 };
 
