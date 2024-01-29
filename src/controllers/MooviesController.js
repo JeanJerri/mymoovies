@@ -50,6 +50,13 @@ const MooviesController = {
         const {title, description, category_id, release_date} = req.body;
 
         try {
+
+            const categoryCheck = await db.query("SELECT * FROM category WHERE id = $1", [category_id]);
+
+            if (categoryCheck.rows.length === 0) {
+                return res.status(400).json({ error: "A categoria especificada não existe." });
+            }
+
             const newMoovie = await db.query(
                 `INSERT INTO moovie(title, description, category_id, release_date) 
                 VALUES ($1, $2, $3, $4) RETURNING *`,
@@ -79,6 +86,39 @@ const MooviesController = {
 
         } catch (error) {
             res.status(500).json({ error: error.message});
+        }
+    },
+
+    async update(req, res) {
+        const { id } = req.params;
+        const { title, description, category_id, release_date } = req.body;
+
+        try {
+
+            const categoryCheck = await db.query("SELECT * FROM category WHERE id = $1", [category_id]);
+
+            if (categoryCheck.rows.length === 0) {
+                return res.status(400).json({ error: "A categoria especificada não existe." });
+            }
+            
+            const updatedMoovie = await db.query(
+                `
+                UPDATE moovie
+                SET title = $1, description = $2, category_id = $3, release_date = $4
+                WHERE id = $5
+                RETURNING *
+                `,
+                [title, description, category_id, release_date, id]
+            );
+
+            if (updatedMoovie.rows.length > 0) {
+                res.json(updatedMoovie.rows[0]);
+            } else {
+                res.status(404).json({ error: "Filme não encontrado" });
+            }
+
+        } catch (error) {
+            res.status(500).json({ error: error.message });
         }
     },
 }
